@@ -1,11 +1,10 @@
 var Promise = require('./bluebird');
-var localstorage = Promise.promisifyAll(require('localstorage'));
 
 var bodyParser = require('body-parser');
 var rpc = require('codius-rpc');
 var chalk = require('chalk');
 
-var names = require('./lib/util/names')
+var names = require('./lib/util/names');
 
 // Force log color support
 chalk.enabled = true;
@@ -51,9 +50,10 @@ common.log = require('./lib/util/log')(common);
 var server;
 switch (rpc.hostId) {
   case common.sender.hostId:
-    server = require('./lib/roles/sender')(common, {
+    server = require('./lib/roles/sender')(common, {});
+    Promise.delay(250).then(function (){
       // The payment the sender would like to make
-      payment: {
+      return Promise.promisify(server.pay)({payment: {
         // Description of the sending account
         source: {
           owner: common.sender.hostId,
@@ -69,7 +69,7 @@ switch (rpc.hostId) {
           currency: 'EUR',
           issuer: common.merchantGateway.hostId
         }
-      }
+      }});
     });
     break;
   case common.senderGateway.hostId:
@@ -96,6 +96,8 @@ switch (rpc.hostId) {
         "4": 250
       }
     });
+    var setup = server._setup;
+    delete server._setup;
     break;
   case common.merchant.hostId:
     server = require('./lib/roles/merchant')(common);
